@@ -224,11 +224,11 @@ function App() {
             consequences: ['소련 의존성', '자주성 상실', '국제적 고립']
           },
           {
-            id: 'independent_diplomacy',
-            title: '자주적 외교',
-            description: '다양한 국가와의 관계를 구축하여 자주성을 유지합니다.',
-            effects: ['다양한 파트너십', '자주성 확보', '국제적 인정'],
-            consequences: ['자원 부족', '복잡한 외교', '불안정성']
+            id: 'pro_china_diplomacy',
+            title: '친중 외교',
+            description: '중국과의 관계를 우선시하고 중국의 지원을 받습니다.',
+            effects: ['중국 지원 확보', '경제 협력 강화', '지리적 이점'],
+            consequences: ['중국 의존성', '자주성 제한', '국제적 고립']
           }
         ]
       }
@@ -643,24 +643,6 @@ function App() {
       ]
     },
     {
-      id: 'turn_system',
-      name: '턴 관리 커멘드',
-      description: '턴 진행 및 시간 관리',
-      icon: '⏰',
-      color: '#9b59b6',
-      policies: [
-        {
-          id: 'turn_management',
-          name: '턴 관리 시스템',
-          description: '주차별 시간 진행과 턴 종료',
-          cost: 0,
-          effects: ['턴 진행', '시간 관리', '주차별 진행'],
-          requirements: [],
-          unlocked: true
-        }
-      ]
-    },
-    {
       id: 'policy_system',
       name: '정책 관리 커멘드',
       description: '국가 정책 및 이벤트 관리',
@@ -691,6 +673,24 @@ function App() {
           description: '정보 수집을 위한 첩보망을 구축합니다.',
           cost: 0,
           effects: ['정보 수집', '상황 파악', '전략 수립'],
+          requirements: [],
+          unlocked: true
+        }
+      ]
+    },
+    {
+      id: 'turn_system',
+      name: '턴 관리 커멘드',
+      description: '턴 진행 및 시간 관리',
+      icon: '⏰',
+      color: '#9b59b6',
+      policies: [
+        {
+          id: 'turn_management',
+          name: '턴 관리 시스템',
+          description: '주차별 시간 진행과 턴 종료',
+          cost: 0,
+          effects: ['턴 진행', '시간 관리', '주차별 진행'],
           requirements: [],
           unlocked: true
         }

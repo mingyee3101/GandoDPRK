@@ -60,8 +60,8 @@ const MeetingPoint: React.FC<MeetingPointProps> = ({
         return '경제 발전'
       case 'pro_soviet':
         return '소련 중심 외교'
-      case 'independent_diplomacy':
-        return '자주적 외교'
+      case 'pro_china_diplomacy':
+        return '친중 외교'
       case 'centralized_leadership':
         return '중앙집권적 지도'
       case 'collective_leadership':

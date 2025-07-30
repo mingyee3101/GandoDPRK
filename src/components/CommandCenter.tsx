@@ -40,8 +40,8 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
         return '경제 발전'
       case 'pro_soviet':
         return '소련 중심 외교'
-      case 'independent_diplomacy':
-        return '자주적 외교'
+      case 'pro_china_diplomacy':
+        return '친중 외교'
       default:
         return '알 수 없음'
     }
