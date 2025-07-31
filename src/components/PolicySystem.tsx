@@ -30,7 +30,7 @@ const PolicySystem: React.FC<PolicySystemProps> = ({
   const getCurrentDate = () => {
     const week = turnData.currentWeek
     const year = turnData.currentYear
-    const month = Math.floor((week - 1) / 4) + 8 // 8월부터 시작
+    const month = turnData.currentMonth // 현재 월 사용
     const weekInMonth = ((week - 1) % 4) + 1
     
     return `${year}년 ${month}월 ${weekInMonth}주차`

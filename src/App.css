@@ -2659,3 +2659,155 @@
     min-width: 30px;
   }
 }
+
+/* 새해 메시지 스타일 */
+.new-year-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  z-index: 1000;
+  animation: fadeInOut 3s ease-in-out;
+}
+
+.new-year-message h2 {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.new-year-message p {
+  margin: 0;
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+}
+
+/* 새해 경고창 스타일 */
+.new-year-warning {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  z-index: 1000;
+  min-width: 400px;
+}
+
+.new-year-warning h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.new-year-warning p {
+  margin: 0 0 1.5rem 0;
+  font-size: 1rem;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.new-year-warning button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1.5rem;
+  margin: 0 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.new-year-warning button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 턴 경고 메시지 스타일 */
+.turn-warning {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  color: white;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.turn-warning p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* 계절 메시지 스타일 */
+.season-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  z-index: 1000;
+  animation: fadeInOut 10s ease-in-out;
+  min-width: 400px;
+}
+
+.season-message h2 {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.season-message p {
+  margin: 0.5rem 0;
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+/* 닫기 버튼 스타일 */
+.close-popup-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.close-popup-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* 새해 메시지에 닫기 버튼 위치 조정 */
+.new-year-message {
+  position: relative;
+}

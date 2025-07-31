@@ -76,9 +76,11 @@ export type TurnData = {
   currentTurn: number
   currentWeek: number
   currentYear: number
+  currentMonth: number
   actionPoints: number
   maxActionPoints: number
   funds: number
+  taxIncome: number
   events: Event[]
   nationalPolicies: NationalPolicy[]
   completedActions: string[]
@@ -151,15 +153,142 @@ function App() {
       currentTurn: 1,
       currentWeek: 1,
       currentYear: 1951,
+      currentMonth: 3, // 3월부터 시작
       actionPoints: 100,
       maxActionPoints: 100,
       funds: 1000000,
+      taxIncome: 50000, // 초기 세금 수입
       events: [],
       nationalPolicies: [],
       completedActions: [],
       unusedActionPoints: 0
     }
   })
+
+  const [showNewYearMessage, setShowNewYearMessage] = useState(false)
+  const [showNewYearWarning, setShowNewYearWarning] = useState(false)
+  const [isNewYearTurn, setIsNewYearTurn] = useState(false)
+  const [showSeasonMessage, setShowSeasonMessage] = useState(false)
+  const [currentSeason, setCurrentSeason] = useState<string>('')
+  const [lastCheckedMonth, setLastCheckedMonth] = useState<number>(3) // 3월부터 시작하므로 3월로 초기화
+
+  const checkSeasonChange = (newMonth: number) => {
+    const newSeason = getSeasonByMonth(newMonth)
+    const oldSeason = getSeasonByMonth(gameState.turnData.currentMonth)
+    
+    if (newSeason !== oldSeason) {
+      setCurrentSeason(newSeason)
+      setShowSeasonMessage(true)
+      setLastCheckedMonth(newMonth)
+      // 스크롤을 맨 위로 이동
+      window.scrollTo(0, 0)
+      setTimeout(() => {
+        setShowSeasonMessage(false)
+        // 계절 팝업이 자동으로 닫힌 후 1월이나 7월이면 회의 화면으로 이동
+        if (newMonth === 1 || newMonth === 7) {
+          setGameState(prev => ({
+            ...prev,
+            currentScreen: 'meeting'
+          }))
+        }
+      }, 10000) // 10초 후 자동으로 숨김
+    }
+  }
+
+  const checkNewYear = (newYear: number, oldYear: number) => {
+    if (newYear > oldYear) {
+      setShowNewYearMessage(true)
+      setIsNewYearTurn(true)
+      // 스크롤을 맨 위로 이동
+      window.scrollTo(0, 0)
+      setTimeout(() => {
+        setShowNewYearMessage(false)
+        // 새해 팝업이 자동으로 닫힌 후 1월이면 회의 화면으로 이동
+        const currentMonth = gameState.turnData.currentMonth
+        if (currentMonth === 1) {
+          setGameState(prev => ({
+            ...prev,
+            currentScreen: 'meeting'
+          }))
+        }
+      }, 10000) // 10초 후 자동으로 숨김
+    }
+  }
+
+  const getSeasonByMonth = (month: number) => {
+    if (month >= 3 && month <= 5) return '봄'
+    if (month >= 6 && month <= 8) return '여름'
+    if (month >= 9 && month <= 11) return '가을'
+    return '겨울'
+  }
+
+  const handleNewYearWarningConfirm = () => {
+    setShowNewYearWarning(false)
+    setIsNewYearTurn(false)
+    
+    // 페널티 적용 (새해 턴이거나 행동을 완료하지 않은 경우)
+    const hasUnusedActionPoints = gameState.turnData.actionPoints > 0
+    const hasCompletedActions = gameState.turnData.completedActions.length > 0
+    
+    if (isNewYearTurn || hasUnusedActionPoints || !hasCompletedActions) {
+      setGameState(prev => ({
+        ...prev,
+        turnData: {
+          ...prev.turnData,
+          actionPoints: Math.floor(prev.turnData.actionPoints * 0.9), // 행동력 10% 감소
+          taxIncome: Math.floor(prev.turnData.taxIncome * 0.95) // 세금 수입 5% 감소
+        }
+      }))
+    }
+    
+    handleNormalTurnEnd()
+  }
+
+  const handleNewYearWarningCancel = () => {
+    setShowNewYearWarning(false)
+  }
+
+  const handleNormalTurnEnd = () => {
+    // 기존의 턴 종료 로직
+    setGameState(prev => {
+      const newMonth = prev.turnData.currentMonth + 1
+      const newYear = prev.turnData.currentYear + Math.floor((newMonth - 1) / 12)
+      const adjustedMonth = ((newMonth - 1) % 12) + 1
+      
+      // 새해 체크
+      checkNewYear(newYear, prev.turnData.currentYear)
+      
+      // 계절 체크
+      checkSeasonChange(adjustedMonth)
+      
+      // 1월과 7월에만 회의가 있는지 확인
+      const hasNewMeetings = adjustedMonth === 1 || adjustedMonth === 7
+      
+      // 팝업이 표시 중이면 커멘드 화면으로 이동, 그렇지 않으면 회의 또는 커멘드 화면으로 이동
+      const nextScreen = (hasNewMeetings && !showSeasonMessage && !showNewYearMessage) ? 'meeting' : 'command'
+      
+      return {
+        ...prev,
+        currentScreen: nextScreen,
+        turnData: {
+          ...prev.turnData,
+          currentTurn: prev.turnData.currentTurn + 1,
+          currentWeek: 1,
+          currentYear: newYear,
+          currentMonth: adjustedMonth,
+          actionPoints: prev.turnData.maxActionPoints,
+          completedActions: [],
+          unusedActionPoints: 0
+        },
+        currentMeeting: hasNewMeetings ? 0 : prev.currentMeeting
+      }
+    })
+    
+    // 턴 넘길 때마다 스크롤을 맨 위로 올림
+    setTimeout(() => {
+      window.scrollTo(0, 0)
+    }, 100)
+  }
 
   const getMeetingsForMonth = (month: number): Meeting[] => {
     const baseMeetings: Meeting[] = [
@@ -497,12 +626,33 @@ function App() {
   }
 
   const getCurrentMonth = () => {
-    const week = gameState.turnData.currentWeek
-    return Math.floor((week - 1) / 4) + 1 // 1주차부터 시작하므로 +1
+    const month = gameState.turnData.currentMonth
+    // 1월과 7월에만 회의
+    if (month === 1 || month === 7) {
+      return Math.floor((month - 1) / 6) + 1 // 1월은 1번째, 7월은 2번째 회의
+    }
+    return 0 // 회의가 없는 달
+  }
+
+  const getCurrentSeason = () => {
+    const month = gameState.turnData.currentMonth
+    if (month >= 3 && month <= 5) return '봄'
+    if (month >= 6 && month <= 8) return '여름'
+    if (month >= 9 && month <= 11) return '가을'
+    return '겨울'
+  }
+
+  const getCurrentDate = () => {
+    const month = gameState.turnData.currentMonth
+    const year = gameState.turnData.currentYear
+    const season = getCurrentSeason()
+    
+    return `${year}년 ${month}월 (${season})`
   }
 
   const getAvailableMeetings = () => {
     const currentMonth = getCurrentMonth()
+    if (currentMonth === 0) return [] // 회의가 없는 달
     return getMeetingsForMonth(currentMonth)
   }
 
@@ -983,39 +1133,41 @@ function App() {
   }
 
   const handleTurnEnd = (unusedActionPoints: number, maintenancePeriod: '1month' | '3months' | '6months' | '1year') => {
-    setGameState(prev => {
-      const periodMultipliers = {
-        '1month': 1,
-        '3months': 3,
-        '6months': 6,
-        '1year': 12
-      }
-      
-      const weeksToAdd = periodMultipliers[maintenancePeriod]
-      const newWeek = prev.turnData.currentWeek + weeksToAdd
-      const newYear = prev.turnData.currentYear + Math.floor((newWeek - 1) / 52)
-      const adjustedWeek = ((newWeek - 1) % 52) + 1
-      
-      // 새로운 달이 시작되면 회의가 있는지 확인
-      const currentMonth = getCurrentMonth()
-      const newMonth = Math.floor((adjustedWeek - 1) / 4) + 1
-      const hasNewMeetings = newMonth > currentMonth
-      
-      return {
+    const hasUnusedActionPoints = gameState.turnData.actionPoints > 0
+    const hasCompletedActions = gameState.turnData.completedActions.length > 0
+    
+    // 새해 턴이거나 행동을 완료하지 않은 경우 경고창 표시
+    if (isNewYearTurn || hasUnusedActionPoints || !hasCompletedActions) {
+      setShowNewYearWarning(true)
+      return
+    }
+
+    // 정상적으로 턴 종료
+    handleNormalTurnEnd()
+  }
+
+  const handleSeasonMessageClose = () => {
+    setShowSeasonMessage(false)
+    // 계절 팝업이 닫힌 후 1월이나 7월이면 회의 화면으로 이동
+    const currentMonth = gameState.turnData.currentMonth
+    if (currentMonth === 1 || currentMonth === 7) {
+      setGameState(prev => ({
         ...prev,
-        currentScreen: hasNewMeetings ? 'meeting' : 'command',
-        turnData: {
-          ...prev.turnData,
-          currentTurn: prev.turnData.currentTurn + 1,
-          currentWeek: adjustedWeek,
-          currentYear: newYear,
-          actionPoints: prev.turnData.maxActionPoints,
-          completedActions: [],
-          unusedActionPoints: unusedActionPoints
-        },
-        currentMeeting: hasNewMeetings ? 0 : prev.currentMeeting
-      }
-    })
+        currentScreen: 'meeting'
+      }))
+    }
+  }
+
+  const handleNewYearMessageClose = () => {
+    setShowNewYearMessage(false)
+    // 새해 팝업이 닫힌 후 1월이면 회의 화면으로 이동
+    const currentMonth = gameState.turnData.currentMonth
+    if (currentMonth === 1) {
+      setGameState(prev => ({
+        ...prev,
+        currentScreen: 'meeting'
+      }))
+    }
   }
 
   const getCurrentMeeting = () => {
@@ -1028,15 +1180,6 @@ function App() {
 
   const getSelectedCommand = () => {
     return commands.find(c => c.id === gameState.selectedCommand)
-  }
-
-  const getCurrentDate = () => {
-    const week = gameState.turnData.currentWeek
-    const year = gameState.turnData.currentYear
-    const month = Math.floor((week - 1) / 4) + 8 // 8월부터 시작
-    const weekInMonth = ((week - 1) % 4) + 1
-    
-    return `${year}년 ${month}월 ${weekInMonth}주차`
   }
 
   const renderCurrentScreen = () => {
@@ -1061,7 +1204,15 @@ function App() {
             totalMeetings={getAvailableMeetings().length}
           />
         }
-        return null
+        // 회의가 없으면 커멘드 화면으로 리다이렉트
+        return <CommandCenter 
+          commands={commands}
+          onCommandSelect={handleCommandSelect}
+          commandProgress={gameState.commandProgress}
+          meetingHistory={gameState.meetingHistory}
+          turnData={gameState.turnData}
+          currentDate={getCurrentDate()}
+        />
       case 'command-detail':
         const selectedCommand = getSelectedCommand()
         if (selectedCommand) {
@@ -1128,6 +1279,38 @@ function App() {
 
   return (
     <div className="app">
+      {showNewYearMessage && (
+        <div className="new-year-message">
+          <button className="close-popup-button" onClick={handleNewYearMessageClose}>×</button>
+          <h2>🎉 새해가 밝았습니다! 🎉</h2>
+          <p>{gameState.turnData.currentYear}년이 시작되었습니다.</p>
+          <p>새로운 해의 계획을 세우고 목표를 향해 나아가세요!</p>
+        </div>
+      )}
+      
+      {showSeasonMessage && (
+        <div className="season-message">
+          <button className="close-popup-button" onClick={handleSeasonMessageClose}>×</button>
+          <h2>🌱 계절이 바뀌었습니다! 🌱</h2>
+          <p>{currentSeason}이 시작되었습니다.</p>
+          {currentSeason === '봄' && <p>새로운 시작과 성장의 계절입니다.</p>}
+          {currentSeason === '여름' && <p>활동과 발전의 계절입니다.</p>}
+          {currentSeason === '가을' && <p>수확과 성숙의 계절입니다.</p>}
+          {currentSeason === '겨울' && <p>휴식과 준비의 계절입니다.</p>}
+        </div>
+      )}
+      
+      {showNewYearWarning && (
+        <div className="new-year-warning">
+          <h3>턴 종료 경고</h3>
+          <p>턴을 종료하시겠습니까?</p>
+          {isNewYearTurn && <p>새해 턴입니다.</p>}
+          <p>행동력이나 완료된 행동이 있으면 페널티가 적용됩니다.</p>
+          <p><strong>페널티:</strong> 행동력 10% 감소, 세금 수입 5% 감소</p>
+          <button onClick={handleNewYearWarningConfirm}>확인</button>
+          <button onClick={handleNewYearWarningCancel}>취소</button>
+        </div>
+      )}
       {renderCurrentScreen()}
     </div>
   )

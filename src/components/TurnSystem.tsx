@@ -28,7 +28,7 @@ const TurnSystem: React.FC<TurnSystemProps> = ({
   const getCurrentDate = () => {
     const week = turnData.currentWeek
     const year = turnData.currentYear
-    const month = Math.floor((week - 1) / 4) + 8 // 8월부터 시작
+    const month = turnData.currentMonth // 현재 월 사용
     const weekInMonth = ((week - 1) % 4) + 1
     
     return `${year}년 ${month}월 ${weekInMonth}주차`
@@ -128,10 +128,15 @@ const TurnSystem: React.FC<TurnSystemProps> = ({
               <button 
                 className="turn-end-button"
                 onClick={handleTurnEndClick}
-                disabled={turnData.actionPoints >= 10}
               >
-                {turnData.actionPoints >= 10 ? '더 많은 행동력을 사용하세요' : '턴 종료'}
+                턴 종료
               </button>
+              
+              {turnData.actionPoints >= 10 && (
+                <div className="turn-warning">
+                  <p>⚠️ 아직 {turnData.actionPoints}의 행동력이 남아있습니다. 턴을 종료하면 페널티가 적용될 수 있습니다.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
