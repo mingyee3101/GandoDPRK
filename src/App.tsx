@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import StartScreen from './components/StartScreen'
 import GameMode from './components/GameMode'
@@ -165,53 +165,26 @@ function App() {
     }
   })
 
-  const [showNewYearMessage, setShowNewYearMessage] = useState(false)
+  const [activePopup, setActivePopup] = useState<{ type: 'newYear' | 'season'; season?: string } | null>(null)
   const [showNewYearWarning, setShowNewYearWarning] = useState(false)
   const [isNewYearTurn, setIsNewYearTurn] = useState(false)
   const [showSeasonMessage, setShowSeasonMessage] = useState(false)
   const [currentSeason, setCurrentSeason] = useState<string>('')
   const [lastCheckedMonth, setLastCheckedMonth] = useState<number>(3) // 3월부터 시작하므로 3월로 초기화
 
+  const checkNewYear = (newYear: number, oldYear: number) => {
+    if (newYear > oldYear) {
+      setActivePopup({ type: 'newYear' })
+      setIsNewYearTurn(true)
+    }
+  }
+
   const checkSeasonChange = (newMonth: number) => {
     const newSeason = getSeasonByMonth(newMonth)
     const oldSeason = getSeasonByMonth(gameState.turnData.currentMonth)
     
     if (newSeason !== oldSeason) {
-      setCurrentSeason(newSeason)
-      setShowSeasonMessage(true)
-      setLastCheckedMonth(newMonth)
-      // 스크롤을 맨 위로 이동
-      window.scrollTo(0, 0)
-      setTimeout(() => {
-        setShowSeasonMessage(false)
-        // 계절 팝업이 자동으로 닫힌 후 1월이나 7월이면 회의 화면으로 이동
-        if (newMonth === 1 || newMonth === 7) {
-          setGameState(prev => ({
-            ...prev,
-            currentScreen: 'meeting'
-          }))
-        }
-      }, 10000) // 10초 후 자동으로 숨김
-    }
-  }
-
-  const checkNewYear = (newYear: number, oldYear: number) => {
-    if (newYear > oldYear) {
-      setShowNewYearMessage(true)
-      setIsNewYearTurn(true)
-      // 스크롤을 맨 위로 이동
-      window.scrollTo(0, 0)
-      setTimeout(() => {
-        setShowNewYearMessage(false)
-        // 새해 팝업이 자동으로 닫힌 후 1월이면 회의 화면으로 이동
-        const currentMonth = gameState.turnData.currentMonth
-        if (currentMonth === 1) {
-          setGameState(prev => ({
-            ...prev,
-            currentScreen: 'meeting'
-          }))
-        }
-      }, 10000) // 10초 후 자동으로 숨김
+      setActivePopup({ type: 'season', season: newSeason })
     }
   }
 
@@ -249,27 +222,19 @@ function App() {
   }
 
   const handleNormalTurnEnd = () => {
-    // 기존의 턴 종료 로직
     setGameState(prev => {
       const newMonth = prev.turnData.currentMonth + 1
       const newYear = prev.turnData.currentYear + Math.floor((newMonth - 1) / 12)
       const adjustedMonth = ((newMonth - 1) % 12) + 1
       
-      // 새해 체크
       checkNewYear(newYear, prev.turnData.currentYear)
-      
-      // 계절 체크
       checkSeasonChange(adjustedMonth)
       
-      // 1월과 7월에만 회의가 있는지 확인
       const hasNewMeetings = adjustedMonth === 1 || adjustedMonth === 7
-      
-      // 팝업이 표시 중이면 커멘드 화면으로 이동, 그렇지 않으면 회의 또는 커멘드 화면으로 이동
-      const nextScreen = (hasNewMeetings && !showSeasonMessage && !showNewYearMessage) ? 'meeting' : 'command'
       
       return {
         ...prev,
-        currentScreen: nextScreen,
+        currentScreen: hasNewMeetings ? 'meeting' : 'command',
         turnData: {
           ...prev.turnData,
           currentTurn: prev.turnData.currentTurn + 1,
@@ -284,7 +249,6 @@ function App() {
       }
     })
     
-    // 턴 넘길 때마다 스크롤을 맨 위로 올림
     setTimeout(() => {
       window.scrollTo(0, 0)
     }, 100)
@@ -1159,7 +1123,7 @@ function App() {
   }
 
   const handleNewYearMessageClose = () => {
-    setShowNewYearMessage(false)
+    setActivePopup(null)
     // 새해 팝업이 닫힌 후 1월이면 회의 화면으로 이동
     const currentMonth = gameState.turnData.currentMonth
     if (currentMonth === 1) {
@@ -1169,6 +1133,32 @@ function App() {
       }))
     }
   }
+
+  const handlePopupClose = () => {
+    setActivePopup(null)
+  }
+
+  useEffect(() => {
+    if (activePopup) {
+      window.scrollTo(0, 0)
+      const timer = setTimeout(() => {
+        setActivePopup(null)
+      }, 10000)
+      return () => clearTimeout(timer)
+    } else {
+      // 팝업이 닫힌 후 회의가 있는지 확인
+      const currentMonth = gameState.turnData.currentMonth
+      if (currentMonth === 1 || currentMonth === 7) {
+        const availableMeetings = getAvailableMeetings()
+        if (availableMeetings.length > 0 && gameState.currentMeeting < availableMeetings.length) {
+          setGameState(prev => ({
+            ...prev,
+            currentScreen: 'meeting'
+          }))
+        }
+      }
+    }
+  }, [activePopup])
 
   const getCurrentMeeting = () => {
     const availableMeetings = getAvailableMeetings()
@@ -1279,24 +1269,25 @@ function App() {
 
   return (
     <div className="app">
-      {showNewYearMessage && (
-        <div className="new-year-message">
-          <button className="close-popup-button" onClick={handleNewYearMessageClose}>×</button>
-          <h2>🎉 새해가 밝았습니다! 🎉</h2>
-          <p>{gameState.turnData.currentYear}년이 시작되었습니다.</p>
-          <p>새로운 해의 계획을 세우고 목표를 향해 나아가세요!</p>
-        </div>
-      )}
-      
-      {showSeasonMessage && (
-        <div className="season-message">
-          <button className="close-popup-button" onClick={handleSeasonMessageClose}>×</button>
-          <h2>🌱 계절이 바뀌었습니다! 🌱</h2>
-          <p>{currentSeason}이 시작되었습니다.</p>
-          {currentSeason === '봄' && <p>새로운 시작과 성장의 계절입니다.</p>}
-          {currentSeason === '여름' && <p>활동과 발전의 계절입니다.</p>}
-          {currentSeason === '가을' && <p>수확과 성숙의 계절입니다.</p>}
-          {currentSeason === '겨울' && <p>휴식과 준비의 계절입니다.</p>}
+      {activePopup && (
+        <div className={activePopup.type === 'newYear' ? 'new-year-message' : 'season-message'}>
+          <button className="close-popup-button" onClick={handlePopupClose}>×</button>
+          {activePopup.type === 'newYear' ? (
+            <>
+              <h2>🎉 새해가 밝았습니다! 🎉</h2>
+              <p>{gameState.turnData.currentYear}년이 시작되었습니다.</p>
+              <p>새로운 해의 계획을 세우고 목표를 향해 나아가세요!</p>
+            </>
+          ) : (
+            <>
+              <h2>🌱 계절이 바뀌었습니다! 🌱</h2>
+              <p>{activePopup.season}이 시작되었습니다.</p>
+              {activePopup.season === '봄' && <p>새로운 시작과 성장의 계절입니다.</p>}
+              {activePopup.season === '여름' && <p>활동과 발전의 계절입니다.</p>}
+              {activePopup.season === '가을' && <p>수확과 성숙의 계절입니다.</p>}
+              {activePopup.season === '겨울' && <p>휴식과 준비의 계절입니다.</p>}
+            </>
+          )}
         </div>
       )}
       
